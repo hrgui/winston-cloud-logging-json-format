@@ -1,5 +1,5 @@
 const winston = require("winston");
-const { printf } = winston.format;
+const { MESSAGE } = require("triple-beam");
 const jsonStringify = require("safe-stable-stringify");
 
 export interface StackdriverData {
@@ -26,55 +26,48 @@ const WINSTON_TO_STACKDRIVER: Map<string, string> = new Map([
 
 export const LOGGING_TRACE_KEY = "logging.googleapis.com/trace";
 
-export const CloudLoggingFormat = printf(
-  ({
-    level,
-    message,
-    metadata = {},
-    resource,
-  }: {
-    level;
-    message;
-    [name: string]: any;
-  }) => {
-    message = message || "";
-    const data: StackdriverData = {};
+export const CloudLoggingFormat = winston.format((info) => {
+  let { level, message, metadata = {}, resource, ...other } = info;
 
-    if (metadata.stack) {
-      message += (message ? " " : "") + metadata.stack;
-    }
+  message = message || "";
+  const data: StackdriverData = {};
 
-    data.message = message;
-
-    const entryMetadata: any = {
-      resource,
-      severity: WINSTON_TO_STACKDRIVER.get(level) || "DEFAULT",
-    };
-
-    if (metadata.logName) {
-      entryMetadata.logName = metadata.logName;
-    }
-
-    if (metadata.httpRequest) {
-      entryMetadata.httpRequest = metadata.httpRequest;
-    }
-
-    if (metadata.timestamp instanceof Date) {
-      entryMetadata.timestamp = metadata.timestamp;
-    }
-
-    if (metadata.labels) {
-      entryMetadata.labels = metadata.labels;
-    }
-
-    const trace = metadata[LOGGING_TRACE_KEY];
-    if (trace) {
-      entryMetadata.trace = trace as string;
-    }
-
-    return jsonStringify({ ...data, ...entryMetadata });
+  if (metadata.stack) {
+    message += (message ? " " : "") + metadata.stack;
   }
-);
+
+  data.message = message;
+
+  const entryMetadata: any = {
+    resource,
+    severity: WINSTON_TO_STACKDRIVER.get(level) || "DEFAULT",
+  };
+
+  if (metadata.logName) {
+    entryMetadata.logName = metadata.logName;
+  }
+
+  if (metadata.httpRequest) {
+    entryMetadata.httpRequest = metadata.httpRequest;
+  }
+
+  if (metadata.timestamp instanceof Date) {
+    entryMetadata.timestamp = metadata.timestamp;
+  }
+
+  if (metadata.labels) {
+    entryMetadata.labels = metadata.labels;
+  }
+
+  const trace = metadata[LOGGING_TRACE_KEY];
+  if (trace) {
+    entryMetadata.trace = trace as string;
+  }
+
+  info[MESSAGE] = jsonStringify({ ...data, ...entryMetadata, ...other });
+
+  return info;
+});
 
 module.exports = CloudLoggingFormat;
 export default CloudLoggingFormat;
