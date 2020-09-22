@@ -26,41 +26,55 @@ const WINSTON_TO_STACKDRIVER: Map<string, string> = new Map([
 
 export const LOGGING_TRACE_KEY = "logging.googleapis.com/trace";
 
-export default printf(({ level, message, metadata, resource }) => {
-  message = message || "";
-  const data: StackdriverData = {};
-
-  if (metadata.stack) {
-    message += (message ? " " : "") + metadata.stack;
-  }
-
-  data.message = message;
-
-  const entryMetadata: any = {
+export const CloudLoggingFormat = printf(
+  ({
+    level,
+    message,
+    metadata = {},
     resource,
-    level: WINSTON_TO_STACKDRIVER.get(level) || "DEFAULT",
-  };
+  }: {
+    level;
+    message;
+    [name: string]: any;
+  }) => {
+    message = message || "";
+    const data: StackdriverData = {};
 
-  if (metadata.logName) {
-    entryMetadata.logName = metadata.logName;
+    if (metadata.stack) {
+      message += (message ? " " : "") + metadata.stack;
+    }
+
+    data.message = message;
+
+    const entryMetadata: any = {
+      resource,
+      level: WINSTON_TO_STACKDRIVER.get(level) || "DEFAULT",
+    };
+
+    if (metadata.logName) {
+      entryMetadata.logName = metadata.logName;
+    }
+
+    if (metadata.httpRequest) {
+      entryMetadata.httpRequest = metadata.httpRequest;
+    }
+
+    if (metadata.timestamp instanceof Date) {
+      entryMetadata.timestamp = metadata.timestamp;
+    }
+
+    if (metadata.labels) {
+      entryMetadata.labels = metadata.labels;
+    }
+
+    const trace = metadata[LOGGING_TRACE_KEY];
+    if (trace) {
+      entryMetadata.trace = trace as string;
+    }
+
+    return jsonStringify({ ...data, ...entryMetadata });
   }
+);
 
-  if (metadata.httpRequest) {
-    entryMetadata.httpRequest = metadata.httpRequest;
-  }
-
-  if (metadata.timestamp instanceof Date) {
-    entryMetadata.timestamp = metadata.timestamp;
-  }
-
-  if (metadata.labels) {
-    entryMetadata.labels = metadata.labels;
-  }
-
-  const trace = metadata[LOGGING_TRACE_KEY];
-  if (trace) {
-    entryMetadata.trace = trace as string;
-  }
-
-  return jsonStringify({ ...data, ...entryMetadata });
-});
+module.exports = CloudLoggingFormat;
+export default CloudLoggingFormat;
