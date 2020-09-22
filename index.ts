@@ -48,7 +48,7 @@ export const CloudLoggingFormat = printf(
 
     const entryMetadata: any = {
       resource,
-      level: WINSTON_TO_STACKDRIVER.get(level) || "DEFAULT",
+      severity: WINSTON_TO_STACKDRIVER.get(level) || "DEFAULT",
     };
 
     if (metadata.logName) {
