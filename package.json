@@ -1,7 +1,8 @@
 {
   "name": "@hrgui/winston-cloud-logging-json-format",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "1.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "author": "Harman",
   "license": "MIT",
   "scripts": {
